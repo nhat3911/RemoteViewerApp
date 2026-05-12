@@ -7,7 +7,7 @@
 - [x] Viewer Register (chưa ổn lắm phần giao diện)
 - [ ] 
 - [ ] 
-...
+- ...
 
 ## 1. Tổng quan
 
