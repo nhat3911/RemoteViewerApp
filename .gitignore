@@ -1,0 +1,70 @@
+## =========================
+## Build folders
+## =========================
+bin/
+obj/
+
+## chỉ rõ thêm cho .NET 8
+**/bin/
+**/obj/
+**/Debug/
+**/Release/
+
+## =========================
+## Visual Studio
+## =========================
+.vs/
+*.user
+*.suo
+*.userosscache
+*.sln.docstates
+
+## =========================
+## .NET publish output
+## =========================
+publish/
+*.publishsettings
+
+## =========================
+## Logs / crash / temp
+## =========================
+*.log
+*.tmp
+*.temp
+*.dmp
+
+## =========================
+## NuGet
+## =========================
+*.nupkg
+**/packages/
+project.lock.json
+
+## =========================
+## Rider / ReSharper (nếu có dùng)
+## =========================
+_ReSharper*/
+*.DotSettings.user
+
+## =========================
+## Windows system files
+## =========================
+Thumbs.db
+Desktop.ini
+
+## =========================
+## Optional (VS Code)
+## =========================
+.vscode/
+
+## =========================
+## User-specific files
+## =========================
+*.user
+*.rsuser
+
+## =========================
+## Sensitive / config local
+## =========================
+appsettings.Development.json
+secrets.json
