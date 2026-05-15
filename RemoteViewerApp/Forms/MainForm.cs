@@ -584,7 +584,10 @@ public partial class MainForm : Form
                 cmbHosts.Items.Add(h);
 
             if (cmbHosts.Items.Count > 0)
+            { 
                 cmbHosts.SelectedIndex = 0;
+                UpdateUI();
+            }
 
             LoggingHelper.Info($"Tìm thấy {hosts.Count} Host đang online.");
         }
