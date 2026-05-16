@@ -24,13 +24,14 @@ public sealed class RemoteScreenControl : PictureBox
 
     // Throttle mouse move để không spam server
     private DateTime _lastMoveSent = DateTime.MinValue;
+    private Image? _frame;
     private const int MoveThrottleMs = 33; // ~30fps
 
     public RemoteScreenControl()
     {
         SetStyle(ControlStyles.Selectable, true);
         TabStop = true;
-        SizeMode = PictureBoxSizeMode.Zoom;
+        SizeMode = PictureBoxSizeMode.Normal;
         BackColor = Color.Black;
         BorderStyle = BorderStyle.None;
 
@@ -79,8 +80,8 @@ public sealed class RemoteScreenControl : PictureBox
 
     private void UpdateFrameUi(System.Drawing.Image image)
     {
-        var old = Image;
-        Image = image;
+        var old = _frame;
+        _frame = image;
         old?.Dispose();
         Invalidate();
     }
@@ -91,18 +92,22 @@ public sealed class RemoteScreenControl : PictureBox
     {
         base.OnPaint(e);
 
-        if (!_showHostCursor || Image == null) return;
+        if (_frame == null) return;
 
-        // Tính vị trí cursor Host trên control (theo tỉ lệ Zoom)
+        e.Graphics.InterpolationMode =
+            System.Drawing.Drawing2D.InterpolationMode.HighQualityBicubic;
+
+        e.Graphics.DrawImage(_frame, ClientRectangle);
+
+        if (!_showHostCursor) return;
+
         var (cx, cy) = HostToControl(_hostMouseX, _hostMouseY);
 
-        // Vẽ hình chữ thập nhỏ màu đỏ
         using var pen = new Pen(Color.Red, 2f);
         const int r = 8;
+
         e.Graphics.DrawLine(pen, cx - r, cy, cx + r, cy);
         e.Graphics.DrawLine(pen, cx, cy - r, cx, cy + r);
-        using var brush = new SolidBrush(Color.FromArgb(180, Color.Red));
-        e.Graphics.FillEllipse(brush, cx - 3, cy - 3, 6, 6);
     }
 
     // ─── Tính tọa độ ─────────────────────────────────────────────────────────
@@ -111,62 +116,23 @@ public sealed class RemoteScreenControl : PictureBox
     /// Chuyển tọa độ chuột trên control sang tọa độ pixel thực trên màn hình Host.
     /// Tính đến PictureBoxSizeMode.Zoom (có thể có letterbox).
     /// </summary>
-    private (int hostX, int hostY) ControlToHost(int controlX, int controlY)
+    private (int x, int y) ControlToHost(int cx, int cy)
     {
-        if (Image == null || _hostScreenWidth == 0 || _hostScreenHeight == 0)
-            return (controlX, controlY);
-
-        var imgRect = GetImageRect();
-        if (imgRect.Width == 0 || imgRect.Height == 0) return (0, 0);
-
-        var relX = (controlX - imgRect.X) / (double)imgRect.Width;
-        var relY = (controlY - imgRect.Y) / (double)imgRect.Height;
-
-        relX = Math.Clamp(relX, 0, 1);
-        relY = Math.Clamp(relY, 0, 1);
-
-        return ((int)(relX * _hostScreenWidth), (int)(relY * _hostScreenHeight));
+        return (
+            cx * _hostScreenWidth / ClientSize.Width,
+            cy * _hostScreenHeight / ClientSize.Height
+        );
     }
 
     private (int cx, int cy) HostToControl(int hostX, int hostY)
     {
-        var imgRect = GetImageRect();
-        if (imgRect.Width == 0 || imgRect.Height == 0) return (0, 0);
+        if (_hostScreenWidth == 0 || _hostScreenHeight == 0)
+            return (0, 0);
 
-        var cx = imgRect.X + (int)(hostX / (double)_hostScreenWidth  * imgRect.Width);
-        var cy = imgRect.Y + (int)(hostY / (double)_hostScreenHeight * imgRect.Height);
-        return (cx, cy);
-    }
-
-    /// <summary>
-    /// Tính vùng ảnh thực tế trong PictureBox với SizeMode=Zoom (có letterbox).
-    /// </summary>
-    private Rectangle GetImageRect()
-    {
-        if (Image == null) return ClientRectangle;
-
-        var ctrlAspect  = (double)Width  / Height;
-        var imgAspect   = (double)Image.Width / Image.Height;
-
-        int w, h, x, y;
-        if (ctrlAspect > imgAspect)
-        {
-            // Letterbox ngang
-            h = Height;
-            w = (int)(h * imgAspect);
-            x = (Width - w) / 2;
-            y = 0;
-        }
-        else
-        {
-            // Letterbox dọc
-            w = Width;
-            h = (int)(w / imgAspect);
-            x = 0;
-            y = (Height - h) / 2;
-        }
-
-        return new Rectangle(x, y, w, h);
+        return (
+            hostX * ClientSize.Width / _hostScreenWidth,
+            hostY * ClientSize.Height / _hostScreenHeight
+        );
     }
 
     // ─── Mouse events ─────────────────────────────────────────────────────────
