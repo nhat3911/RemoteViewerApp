@@ -183,6 +183,19 @@ public sealed class RemoteScreenControl : PictureBox
 
     private void OnMouseMove(object? sender, MouseEventArgs e)
     {
+        LoggingHelper.Info("[UI] MouseMove detected");
+
+        if (_signalR == null)
+        {
+            LoggingHelper.Warning("_signalR NULL");
+            return;
+        }
+
+        if (string.IsNullOrEmpty(_sessionId))
+        {
+            LoggingHelper.Warning("_sessionId EMPTY");
+            return;
+        }
         if (_signalR == null || string.IsNullOrEmpty(_sessionId)) return;
 
         // Throttle

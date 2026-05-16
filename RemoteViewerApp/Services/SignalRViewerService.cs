@@ -154,23 +154,23 @@ public class SignalRViewerService : IAsyncDisposable
 
         // ── Host đồng ý điều khiển ────────────────────────────────────────────
         // Server gửi object: { SessionId, HostId, ViewerId, Status, AcceptedAt }
-        _connection.On<Newtonsoft.Json.Linq.JObject>("ControlAccepted", obj =>
+        _connection.On<ControlAcceptedDto>("ControlAccepted", dto =>
         {
-            var sessionId = obj["sessionId"]?.ToString() ?? obj["SessionId"]?.ToString() ?? "";
-            var hostId    = obj["hostId"]?.ToString()    ?? obj["HostId"]?.ToString()    ?? "";
-            var viewerId  = obj["viewerId"]?.ToString()  ?? obj["ViewerId"]?.ToString()  ?? "";
-            LoggingHelper.Info($"[ControlAccepted] Host đồng ý – session: {sessionId}");
-            OnControlAccepted?.Invoke(sessionId, hostId, viewerId);
+            LoggingHelper.Info($"[ControlAccepted] session={dto.SessionId} | host={dto.HostId} | viewer={dto.ViewerId}");
+
+            OnControlAccepted?.Invoke(
+                dto.SessionId,
+                dto.HostId,
+                dto.ViewerId);
         });
 
         // ── Host từ chối điều khiển ───────────────────────────────────────────
         // Server gửi object: { SessionId, HostId, ViewerId, Status, Reason, RejectedAt }
-        _connection.On<Newtonsoft.Json.Linq.JObject>("ControlRejected", obj =>
+        _connection.On<ControlRejectedDto>("ControlRejected", dto =>
         {
-            var sessionId = obj["sessionId"]?.ToString() ?? obj["SessionId"]?.ToString() ?? "";
-            var reason    = obj["reason"]?.ToString()    ?? obj["Reason"]?.ToString();
-            LoggingHelper.Info($"[ControlRejected] Host từ chối – session: {sessionId}, lý do: {reason}");
-            OnControlRejected?.Invoke(sessionId, reason);
+            LoggingHelper.Info($"[ControlRejected] session={dto.SessionId} | reason={dto.Reason}");
+
+            OnControlRejected?.Invoke(dto.SessionId, dto.Reason);
         });
 
         // ── Phiên kết thúc (từ Host hoặc từ viewer khác) ─────────────────────
@@ -185,23 +185,10 @@ public class SignalRViewerService : IAsyncDisposable
         // Server relay: { SessionId, HostId, ViewerId, ImageBase64,
         //                 ScreenWidth, ScreenHeight, FrameWidth, FrameHeight,
         //                 MouseX, MouseY, SentAt, ReceivedAt }
-        _connection.On<Newtonsoft.Json.Linq.JObject>("ReceiveScreenFrame", obj =>
+        _connection.On<ScreenFrameDto>("ReceiveScreenFrame",frame =>
         {
             try
             {
-                var frame = new ScreenFrameDto
-                {
-                    SessionId   = obj["sessionId"]?.ToString()   ?? obj["SessionId"]?.ToString()   ?? "",
-                    HostId      = obj["hostId"]?.ToString()      ?? obj["HostId"]?.ToString()      ?? "",
-                    ViewerId    = obj["viewerId"]?.ToString()    ?? obj["ViewerId"]?.ToString()    ?? "",
-                    ImageBase64 = obj["imageBase64"]?.ToString() ?? obj["ImageBase64"]?.ToString() ?? "",
-                    ScreenWidth = (int)(obj["screenWidth"]  ?? obj["ScreenWidth"]  ?? 1920),
-                    ScreenHeight= (int)(obj["screenHeight"] ?? obj["ScreenHeight"] ?? 1080),
-                    FrameWidth  = (int)(obj["frameWidth"]   ?? obj["FrameWidth"]   ?? 1280),
-                    FrameHeight = (int)(obj["frameHeight"]  ?? obj["FrameHeight"]  ?? 720),
-                    MouseX      = (int)(obj["mouseX"]       ?? obj["MouseX"]       ?? 0),
-                    MouseY      = (int)(obj["mouseY"]       ?? obj["MouseY"]       ?? 0),
-                };
                 OnScreenFrameReceived?.Invoke(frame);
             }
             catch (Exception ex)
@@ -267,7 +254,13 @@ public class SignalRViewerService : IAsyncDisposable
         if (!IsConnected) return;
         try
         {
+            LoggingHelper.Info(
+            $"[VIEWER] Sending mouse event | " +
+            $"Action={dto.Action} | " +
+            $"X={dto.X} Y={dto.Y}");
             await _connection!.SendAsync("SendMouseEvent", dto);
+            LoggingHelper.Info(
+            "[VIEWER] SendMouseEvent DONE");
         }
         catch (Exception ex)
         {

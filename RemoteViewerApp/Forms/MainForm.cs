@@ -422,6 +422,8 @@ public partial class MainForm : Form
 
                 // Kích hoạt screen control nhận input
                 screenControl.Initialize(_signalR, sessionId);
+                screenControl.Enabled = true;
+                screenControl.TabStop = true;
                 screenControl.Focus();
 
                 // Ẩn hint label
@@ -698,8 +700,23 @@ public partial class MainForm : Form
         lblResolution.Text = "–";
     }
 
-    private void HideHint() => lblHint.Visible = false;
-    private void ShowHint() => lblHint.Visible = true;
+    private void HideHint()
+    {
+        lblHint.Visible = false;
+        lblHint.SendToBack();
+
+        screenControl.BringToFront();
+        screenControl.Enabled = true;
+        screenControl.Focus();
+
+        LoggingHelper.Info("[UI] screenControl focused");
+    }
+
+    private void ShowHint()
+    {
+        lblHint.Visible = true;
+        lblHint.BringToFront();
+    }
 
     private void SafeInvoke(Action action)
     {
